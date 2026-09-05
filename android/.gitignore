@@ -1,0 +1,15 @@
+# Gradle
+.gradle
+/build
+/local.properties
+*.iml
+.DS_Store
+.idea
+.classpath
+.project
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/
+*.swp

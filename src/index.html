@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101828">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<title>SRK Super Power — Staff Face Attendance</title>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"><\/script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f6fb;color:#172033}
+header{background:#101828;color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
+header h1{margin:0;font-size:22px}header small{opacity:.75}
+nav{background:#fff;padding:10px 18px;display:flex;gap:8px;border-bottom:1px solid #ddd;flex-wrap:wrap}
+button{border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:700;background:#155eef;color:white}
+button.secondary{background:#e8eef8;color:#172033}button.danger{background:#d92d20}
+.container{max-width:1200px;margin:22px auto;padding:0 16px}.card{background:#fff;border:1px solid #e4e7ec;border-radius:14px;padding:20px;margin-bottom:18px;box-shadow:0 3px 12px #1018280d}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+input,select{width:100%;padding:12px;border:1px solid #ccd2dc;border-radius:8px;margin:6px 0 12px}
+label{font-weight:700;font-size:13px}.hidden{display:none!important}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}.stat{background:#f8fafc;border-radius:12px;padding:16px}.stat b{font-size:28px;display:block;margin-top:5px}
+video{width:100%;max-width:560px;border-radius:12px;background:#111;transform:scaleX(-1)}
+canvas{display:none}
+table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:13px}
+.badge{padding:4px 8px;border-radius:99px;background:#e7f6ec;color:#16794a}.muted{color:#667085}.msg{padding:10px;border-radius:8px;background:#eef4ff;margin:10px 0}
+.login{max-width:420px;margin:70px auto}.right{float:right}
+</style>
+</head>
+<body>
+<header><div><h1>SRK SUPER POWER</h1><small>Office Staff Face Attendance System</small></div><div id="userLabel"></div></header>
+
+<section id="loginPage" class="container login">
+<div class="card">
+<h2>Admin Login</h2>
+<label>Admin ID</label><input id="adminId" value="admin">
+<label>Password</label><input id="adminPass" type="password" value="admin123">
+<button onclick="adminLogin()">Login</button>
+<p class="muted">Change the default credentials before production use.</p>
+</div></section>
+
+<div id="app" class="hidden">
+<nav>
+<button onclick="showTab('dashboard')">Dashboard</button>
+<button onclick="showTab('staff')">Staff ID Creation</button>
+<button onclick="showTab('face')">Face Login / Logout</button>
+<button class="secondary" onclick="syncNow()">Save to Google Sheets ✓</button>
+<button class="danger" onclick="logout()">Logout</button>
+</nav>
+<div class="container">
+
+<section id="dashboard" class="tab">
+<div class="card"><h2>Attendance Dashboard</h2><div class="stats">
+<div class="stat">Total Staff<b id="sStaff">0</b></div><div class="stat">Present Today<b id="sPresent">0</b></div>
+<div class="stat">Checked In<b id="sIn">0</b></div><div class="stat">Checked Out<b id="sOut">0</b></div>
+</div></div>
+<div class="card"><h3>Today's Attendance</h3><input id="dashSearch" placeholder="Search staff..." oninput="renderTable()"><div style="overflow:auto"><table><thead><tr><th>Staff ID</th><th>Name</th><th>Date</th><th>Login</th><th>Logout</th><th>Status</th><th>Delete</th></tr></thead><tbody id="attendanceBody"></tbody></table></div></div>
+</section>
+
+<section id="staff" class="tab hidden">
+<div class="card"><h2>Create Staff ID & Register Face</h2>
+<div class="grid"><div><label>Staff ID</label><input id="staffId" placeholder="SRK-001"></div>
+<div><label>Staff Name</label><input id="staffName" placeholder="Employee name"></div>
+<div><label>Department</label><input id="staffDept" placeholder="Office / Sales"></div>
+<div><label>Mobile</label><input id="staffMobile" placeholder="Optional"></div></div>
+<button onclick="startEnrollment()">Open Camera & Capture Face</button>
+<div id="enrollBox" class="hidden" style="margin-top:15px"><video id="enrollVideo" autoplay muted playsinline></video><br><button onclick="captureFace()">Capture & Save Staff</button></div>
+<div id="staffMsg"></div>
+<hr><h3>Staff List</h3><div style="overflow:auto"><table><thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Face</th><th>Action</th></tr></thead><tbody id="staffBody"></tbody></table></div>
+</div></section>
+
+<section id="face" class="tab hidden">
+<div class="card"><h2>Face Login / Logout</h2><p class="muted">The camera compares the live face with registered staff face data stored in this browser.</p>
+<button onclick="startAttendanceCamera()">Start Camera</button> <button class="secondary" onclick="stopCamera()">Stop</button>
+<div style="margin-top:15px"><video id="attVideo" autoplay muted playsinline></video></div>
+<div id="faceStatus" class="msg">Camera not started.</div>
+<button onclick="faceAttendance('LOGIN')">FACE LOGIN</button>
+<button class="secondary" onclick="faceAttendance('LOGOUT')">FACE LOGOUT</button>
+<p class="muted">📍 Location required: <b>Primarc Tower, Salt Lake, Sector V, Kolkata</b>. Attendance is allowed only inside the office area.</p>
+</div>
+</section>
+
+</div></div>
+<script>
+const KEY='srk_super_power_v1';
+let db=JSON.parse(localStorage.getItem(KEY)||'{"staff":[],"attendance":[]}');
+let stream=null,enrollStream=null,modelsReady=false;
+
+function saveLocal(){localStorage.setItem(KEY,JSON.stringify(db));}
+function adminLogin(){
+ if(document.getElementById('adminId').value==='admin' && document.getElementById('adminPass').value==='admin123'){
+  document.getElementById('loginPage').classList.add('hidden');document.getElementById('app').classList.remove('hidden');
+  document.getElementById('userLabel').textContent='ADMIN';renderAll();
+ }else alert('Invalid Admin Login');
+}
+function logout(){location.reload()}
+function showTab(id){document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');renderAll()}
+function today(){return new Date().toISOString().slice(0,10)}
+function nowTime(){return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+function renderAll(){renderStats();renderTable();renderStaff()}
+function renderStats(){
+ const t=today(), a=db.attendance.filter(x=>x.date===t);
+ document.getElementById('sStaff').textContent=db.staff.length;
+ document.getElementById('sPresent').textContent=new Set(a.map(x=>x.staffId)).size;
+ document.getElementById('sIn').textContent=a.filter(x=>x.login).length;
+ document.getElementById('sOut').textContent=a.filter(x=>x.logout).length;
+}
+function renderTable(){
+ const q=(document.getElementById('dashSearch')?.value||'').toLowerCase(),t=today();
+ const a=db.attendance.filter(x=>x.date===t && ((x.staffId+x.name).toLowerCase().includes(q)));
+ document.getElementById('attendanceBody').innerHTML=a.map(x=>`<tr><td>${x.staffId}</td><td>${x.name}</td><td>${x.date}</td><td>${x.login||'-'}</td><td>${x.logout||'-'}</td><td><span class="badge">${x.logout?'Completed':'Present'}</span></td><td><button class="danger" onclick="deleteAttendance('${x.staffId}','${x.date}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="7">No attendance today.</td></tr>';
+}
+function renderStaff(){
+ document.getElementById('staffBody').innerHTML=db.staff.map((s,i)=>`<tr><td>${s.id}</td><td>${s.name}</td><td>${s.dept||''}</td><td>${s.descriptor?'Registered':'Not registered'}</td><td><button class="danger" onclick="deleteStaff(${i})">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">No staff.</td></tr>';
+}
+function deleteStaff(i){if(confirm('Delete this staff?')){db.staff.splice(i,1);saveLocal();renderAll()}}
+async function loadModels(){
+ if(modelsReady)return true;
+ document.getElementById('faceStatus').textContent='Loading face model...';
+ const base='https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+ try{
+  await faceapi.nets.tinyFaceDetector.loadFromUri(base);
+  await faceapi.nets.faceLandmark68Net.loadFromUri(base);
+  await faceapi.nets.faceRecognitionNet.loadFromUri(base);
+  modelsReady=true;return true;
+ }catch(e){alert('Face model could not load. Check internet connection.');return false}
+}
+async function getDescriptor(video){
+ const r=await faceapi.detectSingleFace(video,new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+ return r?.descriptor||null;
+}
+async function startEnrollment(){
+ if(!await loadModels())return;
+ document.getElementById('enrollBox').classList.remove('hidden');
+ enrollStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+ document.getElementById('enrollVideo').srcObject=enrollStream;
+ document.getElementById('staffMsg').textContent='Look directly at the camera, then capture.';
+}
+async function captureFace(){
+ const id=document.getElementById('staffId').value.trim(),name=document.getElementById('staffName').value.trim();
+ if(!id||!name){alert('Enter Staff ID and Staff Name');return}
+ if(db.staff.some(s=>s.id===id)){alert('Staff ID already exists');return}
+ const d=await getDescriptor(document.getElementById('enrollVideo'));
+ if(!d){alert('Face not detected. Try again with good lighting.');return}
+ db.staff.push({id,name,dept:document.getElementById('staffDept').value.trim(),mobile:document.getElementById('staffMobile').value.trim(),descriptor:Array.from(d)});
+ saveLocal();if(enrollStream)enrollStream.getTracks().forEach(t=>t.stop());
+ document.getElementById('enrollBox').classList.add('hidden');document.getElementById('staffMsg').textContent='Staff created and face registered ✓';
+ ['staffId','staffName','staffDept','staffMobile'].forEach(id=>document.getElementById(id).value='');renderAll();
+}
+
+function deleteAttendance(staffId,date){
+ if(confirm('Delete this attendance record?')){
+  db.attendance=db.attendance.filter(x=>!(x.staffId===staffId&&x.date===date));
+  saveLocal();renderAll();syncNow(true);
+ }
+}
+const OFFICE={lat:22.57617,lng:88.43195,radius:180,name:'Primarc Tower, Salt Lake, Sector V, Kolkata'};
+function distanceMeters(lat1,lon1,lat2,lon2){
+ const R=6371000,p=Math.PI/180,dLat=(lat2-lat1)*p,dLon=(lon2-lon1)*p;
+ const a=Math.sin(dLat/2)**2+Math.cos(lat1*p)*Math.cos(lat2*p)*Math.sin(dLon/2)**2;
+ return 2*R*Math.asin(Math.sqrt(a));
+}
+function checkOfficeLocation(){
+ return new Promise(resolve=>{
+  if(!navigator.geolocation){alert('Location is not supported on this device.');resolve(false);return}
+  navigator.geolocation.getCurrentPosition(pos=>{
+   const d=distanceMeters(pos.coords.latitude,pos.coords.longitude,OFFICE.lat,OFFICE.lng);
+   if(d<=OFFICE.radius){document.getElementById('faceStatus').textContent=`Office location verified ✓ (${Math.round(d)} m)`;resolve(true)}
+   else{document.getElementById('faceStatus').textContent=`Outside office area (${Math.round(d)} m away)`;alert('Face Login/Logout is allowed only at Primarc Tower, Salt Lake.');resolve(false)}
+  },()=>{alert('Please allow Location permission to use attendance.');resolve(false)},
+  {enableHighAccuracy:true,timeout:10000,maximumAge:15000});
+ });
+}
+
+async function startAttendanceCamera(){
+ if(!await loadModels())return;
+ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+ document.getElementById('attVideo').srcObject=stream;document.getElementById('faceStatus').textContent='Camera ready. Look at the camera.';
+}
+function stopCamera(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null}
+async function faceAttendance(action){
+ if(!(await checkOfficeLocation())) return;
+ if(!stream){alert('Start Camera first');return}
+ if(!db.staff.length){alert('Create staff and register faces first');return}
+ const d=await getDescriptor(document.getElementById('attVideo'));
+ if(!d){document.getElementById('faceStatus').textContent='No face detected.';return}
+ let best=null,dist=999;
+ for(const s of db.staff){const x=faceapi.euclideanDistance(d,new Float32Array(s.descriptor));if(x<dist){dist=x;best=s}}
+ if(!best||dist>0.48){document.getElementById('faceStatus').textContent='Face not recognized.';return}
+ const date=today(), rec=db.attendance.find(x=>x.staffId===best.id&&x.date===date);
+ if(action==='LOGIN'){
+   if(rec?.login){document.getElementById('faceStatus').textContent=best.name+' is already logged in.';return}
+   if(rec)rec.login=nowTime();else db.attendance.push({staffId:best.id,name:best.name,date,login:nowTime(),logout:''});
+ }else{
+   if(!rec||!rec.login){document.getElementById('faceStatus').textContent='Staff must Face Login first.';return}
+   if(rec.logout){document.getElementById('faceStatus').textContent=best.name+' is already logged out.';return}
+   rec.logout=nowTime();
+ }
+ saveLocal();renderAll();document.getElementById('faceStatus').textContent=`${best.name} — ${action==='LOGIN'?'FACE LOGIN':'FACE LOGOUT'} successful ✓`;
+ syncNow(true);
+}
+async function syncNow(silent=false){
+ const url=localStorage.getItem('SRK_SHEETS_WEBAPP_URL')||prompt('Paste your Google Apps Script Web App URL (/exec):');
+ if(!url)return;
+ localStorage.setItem('SRK_SHEETS_WEBAPP_URL',url);
+ try{
+  const payload={action:'sync',staff:db.staff.map(s=>({...s,descriptor:undefined})),attendance:db.attendance};
+  await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+  if(!silent)alert('Google Sheets sync sent ✓');
+ }catch(e){if(!silent)alert('Sync failed: '+e.message)}
+}
+renderAll();
+<\/script>
+</body></html>
