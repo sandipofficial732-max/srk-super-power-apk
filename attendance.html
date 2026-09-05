@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRK Super Power - Face Attendance</title>
+    <script async src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+        }
+        
+        .navbar {
+            background: #1a73e8;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+        
+        .navbar-user {
+            font-size: 14px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            padding: 12px 20px;
+            border: none;
+            background: white;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            background: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        
+        .tab-btn:hover {
+            border-color: #1a73e8;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 5px rgba(26,115,232,0.3);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1557b0;
+        }
+        
+        .btn-secondary {
+            background: #f1f3f4;
+            color: #202124;
+            border: 1px solid #dadce0;
+        }
+        
+        .btn-secondary:hover {
+            background: #e8eaed;
+        }
+        
+        .btn-danger {
+            background: #d33b27;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        table thead {
+            background: #f1f3f4;
+        }
+        
+        table th,
+        table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e8eaed;
+        }
+        
+        table th {
+            font-weight: 600;
+            color: #202124;
+        }
+        
+        table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        video {
+            width: 100%;
+            max-width: 500px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: block;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+        }
+        
+        .login-box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .login-box h2 {
+            margin-bottom: 20px;
+            color: #202124;
+        }
+        
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+            
+            .navbar {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage">
+        <div class="login-container">
+            <div class="login-box">
+                <h2>SRK Super Power Login</h2>
+                <div class="form-group">
+                    <label>Admin ID</label>
+                    <input type="text" id="loginAdminId" value="admin" placeholder="Admin ID">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" value="admin123" placeholder="Password">
+                </div>
+                <button class="btn btn-primary" onclick="login()">Login</button>
+                <p style="margin-top: 15px; font-size: 12px; color: #999;">
+                    Default: admin / admin123
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="appPage" style="display: none;">
+        <div class="navbar">
+            <div>
+                <h1>SRK SUPER POWER</h1>
+                <small>Face Attendance System</small>
+            </div>
+            <div class="navbar-user" id="userDisplay">Admin</div>
+            <button class="btn btn-danger" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="container">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+                <button class="tab-btn" onclick="switchTab('staff')">Add Staff</button>
+                <button class="tab-btn" onclick="switchTab('attendance')">Mark Attendance</button>
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <h2>Attendance Dashboard</h2>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>Total Staff</h3>
+                        <div class="number" id="totalStaff">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Present Today</h3>
+                        <div class="number" id="presentToday">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Checked In</h3>
+                        <div class="number" id="checkedIn">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Checked Out</h3>
+                        <div class="number" id="checkedOut">0</div>
+                    </div>
+                </div>
+
+                <h3>Today's Attendance</h3>
+                <div class="form-group">
+                    <input type="text" id="searchStaff" placeholder="Search staff..." onkeyup="updateDashboard()">
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Staff ID</th>
+                            <th>Name</th>
+                            <th>Check In</th>
+                            <th>Check Out</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceTable">
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Add Staff Tab -->
+            <div id="staff" class="tab-content">
+                <h2>Register New Staff</h2>
+                
+                <div class="two-column">
+                    <div>
+                        <div class="form-group">
+                            <label>Staff ID</label>
+                            <input type="text" id="staffId" placeholder="SRK-001">
+                        </div>
+                        <div class="form-group">
+                            <label>Staff Name</label>
+                            <input type="text" id="staffName" placeholder="John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label>Department</label>
+                            <input type="text" id="staffDept" placeholder="Sales">
+                        </div>
+                        <div class="form-group">
+                            <label>Mobile</label>
+                            <input type="text" id="staffMobile" placeholder="9876543210">
+                        </div>
+                        <button class="btn btn-primary" onclick="startCameraForEnrollment()">Open Camera</button>
+                        <button class="btn btn-secondary" onclick="captureFace()">Capture Face</button>
+                        <button class="btn btn-primary" onclick="saveStaff()">Save Staff</button>
+                    </div>
+                    <div>
+                        <video id="enrollmentVideo" style="display:none;"></video>
+                        <div id="enrollmentStatus"></div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 30px;">Registered Staff</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffTable">
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Attendance Tab -->
+            <div id="attendance" class="tab-content">
+                <h2>Mark Attendance</h2>
+                
+                <div class="form-group">
+                    <label>Select Staff</label>
+                    <select id="staffSelectDropdown" onchange="selectStaffForAttendance()">
+                        <option value="">-- Select Staff --</option>
+                    </select>
+                </div>
+
+                <div style="text-align: center;">
+                    <video id="attendanceVideo" style="display:none; width: 400px; max-width: 100%;"></video>
+                    <button class="btn btn-primary" onclick="startCameraForAttendance()">Start Camera</button>
+                    <button class="btn btn-secondary" onclick="stopCamera()">Stop Camera</button>
+                </div>
+
+                <div id="attendanceStatus" style="margin-top: 20px;"></div>
+
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn btn-primary" onclick="markCheckIn()">Check In</button>
+                    <button class="btn btn-secondary" onclick="markCheckOut()">Check Out</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Structure
+        let appData = {
+            staff: [],
+            attendance: []
+        };
+
+        let currentVideo = null;
+        let enrollmentVideo = null;
+        let selectedStaffId = null;
+        let currentFaceDescriptor = null;
+
+        // Load data from localStorage
+        function loadData() {
+            const saved = localStorage.getItem('srkData');
+            if (saved) {
+                appData = JSON.parse(saved);
+            }
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('srkData', JSON.stringify(appData));
+        }
+
+        // Login function
+        function login() {
+            const adminId = document.getElementById('loginAdminId').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (adminId === 'admin' && password === 'admin123') {
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('appPage').style.display = 'block';
+                loadData();
+                updateDashboard();
+                updateStaffList();
+                updateStaffDropdown();
+            } else {
+                alert('Invalid credentials!');
+            }
+        }
+
+        // Logout function
+        function logout() {
+            document.getElementById('appPage').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'block';
+            document.getElementById('loginAdminId').value = 'admin';
+            document.getElementById('loginPassword').value = 'admin123';
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Get today's date
+        function getToday() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        // Get current time
+        function getCurrentTime() {
+            return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        // Update dashboard
+        function updateDashboard() {
+            const search = document.getElementById('searchStaff').value.toLowerCase();
+            const today = getToday();
+            const todayAttendance = appData.attendance.filter(a => a.date === today);
+
+            // Update stats
+            document.getElementById('totalStaff').textContent = appData.staff.length;
+            document.getElementById('presentToday').textContent = new Set(todayAttendance.map(a => a.staffId)).size;
+            document.getElementById('checkedIn').textContent = todayAttendance.filter(a => a.checkIn).length;
+            document.getElementById('checkedOut').textContent = todayAttendance.filter(a => a.checkOut).length;
+
+            // Update table
+            let html = '';
+            todayAttendance.forEach(record => {
+                if (record.staffId.toLowerCase().includes(search) || record.name.toLowerCase().includes(search)) {
+                    html += `<tr>
+                        <td>${record.staffId}</td>
+                        <td>${record.name}</td>
+                        <td>${record.checkIn || '-'}</td>
+                        <td>${record.checkOut || '-'}</td>
+                        <td><span class="badge ${record.checkOut ? 'badge-success' : 'badge-warning'}">
+                            ${record.checkOut ? 'Completed' : 'Checked In'}
+                        </span></td>
+                        <td>
+                            <button class="btn btn-danger" onclick="deleteAttendance('${record.staffId}', '${record.date}')">Delete</button>
+                        </td>
+                    </tr>`;
+                }
+            });
+
+            if (!html) {
+                html = '<tr><td colspan="6" style="text-align: center; color: #999;">No attendance records today</td></tr>';
+            }
+
+            document.getElementById('attendanceTable').innerHTML = html;
+        }
+
+        // Update staff list
+        function updateStaffList() {
+            let html = '';
+            appData.staff.forEach((staff, index) => {
+                html += `<tr>
+                    <td>${staff.id}</td>
+                    <td>${staff.name}</td>
+                    <td>${staff.dept}</td>
+                    <td><span class="badge badge-success">Registered</span></td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deleteStaff(${index})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+
+            if (!html) {
+                html = '<tr><td colspan="5" style="text-align: center; color: #999;">No staff registered</td></tr>';
+            }
+
+            document.getElementById('staffTable').innerHTML = html;
+        }
+
+        // Update staff dropdown
+        function updateStaffDropdown() {
+            let html = '<option value="">-- Select Staff --</option>';
+            appData.staff.forEach(staff => {
+                html += `<option value="${staff.id}">${staff.name} (${staff.id})</option>`;
+            });
+            document.getElementById('staffSelectDropdown').innerHTML = html;
+        }
+
+        // Start camera for enrollment
+        function startCameraForEnrollment() {
+            const video = document.getElementById('enrollmentVideo');
+            video.style.display = 'block';
+            
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    enrollmentVideo = stream;
+                    video.srcObject = stream;
+                })
+                .catch(err => {
+                    alert('Camera access denied: ' + err.message);
+                });
+        }
+
+        // Capture face
+        function captureFace() {
+            if (!enrollmentVideo) {
+                alert('Please start camera first');
+                return;
+            }
+
+            const video = document.getElementById('enrollmentVideo');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            document.getElementById('enrollmentStatus').innerHTML = '<div class="message success">Face captured! Click Save Staff to register.</div>';
+        }
+
+        // Save staff
+        function saveStaff() {
+            const staffId = document.getElementById('staffId').value.trim();
+            const staffName = document.getElementById('staffName').value.trim();
+            const staffDept = document.getElementById('staffDept').value.trim();
+            const staffMobile = document.getElementById('staffMobile').value.trim();
+
+            if (!staffId || !staffName || !staffDept) {
+                alert('Please fill all required fields');
+                return;
+            }
+
+            if (appData.staff.some(s => s.id === staffId)) {
+                alert('Staff ID already exists');
+                return;
+            }
+
+            appData.staff.push({
+                id: staffId,
+                name: staffName,
+                dept: staffDept,
+                mobile: staffMobile,
+                registeredDate: new Date().toLocaleString()
+            });
+
+            saveData();
+            updateStaffList();
+            updateStaffDropdown();
+
+            document.getElementById('staffId').value = '';
+            document.getElementById('staffName').value = '';
+            document.getElementById('staffDept').value = '';
+            document.getElementById('staffMobile').value = '';
+            document.getElementById('enrollmentStatus').innerHTML = '<div class="message success">Staff registered successfully!</div>';
+
+            if (enrollmentVideo) {
+                enrollmentVideo.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('enrollmentVideo').style.display = 'none';
+        }
+
+        // Delete staff
+        function deleteStaff(index) {
+            if (confirm('Delete this staff?')) {
+                appData.staff.splice(index, 1);
+                saveData();
+                updateStaffList();
+                updateStaffDropdown();
+            }
+        }
+
+        // Select staff for attendance
+        function selectStaffForAttendance() {
+            selectedStaffId = document.getElementById('staffSelectDropdown').value;
+            if (selectedStaffId) {
+                const staff = appData.staff.find(s => s.id === selectedStaffId);
+                document.getElementById('attendanceStatus').innerHTML = `<div class="message info">Selected: ${staff.name}</div>`;
+            }
+        }
+
+        // Start camera for attendance
+        function startCameraForAttendance() {
+            if (!selectedStaffId) {
+                alert('Please select a staff first');
+                return;
+            }
+
+            const video = document.getElementById('attendanceVideo');
+            video.style.display = 'block';
+
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    currentVideo = stream;
+                    video.srcObject = stream;
+                    document.getElementById('attendanceStatus').innerHTML = '<div class="message info">Camera started. Press Check In/Out to mark attendance.</div>';
+                })
+                .catch(err => {
+                    alert('Camera access denied: ' + err.message);
+                });
+        }
+
+        // Stop camera
+        function stopCamera() {
+            if (currentVideo) {
+                currentVideo.getTracks().forEach(track => track.stop());
+            }
+            if (enrollmentVideo) {
+                enrollmentVideo.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('attendanceVideo').style.display = 'none';
+            document.getElementById('enrollmentVideo').style.display = 'none';
+        }
+
+        // Mark check in
+        function markCheckIn() {
+            if (!selectedStaffId) {
+                alert('Please select a staff first');
+                return;
+            }
+
+            const staff = appData.staff.find(s => s.id === selectedStaffId);
+            const today = getToday();
+            let record = appData.attendance.find(a => a.staffId === selectedStaffId && a.date === today);
+
+            if (record && record.checkIn) {
+                alert(staff.name + ' already checked in');
+                return;
+            }
+
+            if (!record) {
+                record = {
+                    staffId: selectedStaffId,
+                    name: staff.name,
+                    date: today,
+                    checkIn: null,
+                    checkOut: null
+                };
+                appData.attendance.push(record);
+            }
+
+            record.checkIn = getCurrentTime();
+            saveData();
+            updateDashboard();
+            document.getElementById('attendanceStatus').innerHTML = `<div class="message success">✓ ${staff.name} checked in at ${record.checkIn}</div>`;
+        }
+
+        // Mark check out
+        function markCheckOut() {
+            if (!selectedStaffId) {
+                alert('Please select a staff first');
+                return;
+            }
+
+            const staff = appData.staff.find(s => s.id === selectedStaffId);
+            const today = getToday();
+            const record = appData.attendance.find(a => a.staffId === selectedStaffId && a.date === today);
+
+            if (!record || !record.checkIn) {
+                alert(staff.name + ' must check in first');
+                return;
+            }
+
+            if (record.checkOut) {
+                alert(staff.name + ' already checked out');
+                return;
+            }
+
+            record.checkOut = getCurrentTime();
+            saveData();
+            updateDashboard();
+            document.getElementById('attendanceStatus').innerHTML = `<div class="message success">✓ ${staff.name} checked out at ${record.checkOut}</div>`;
+        }
+
+        // Delete attendance
+        function deleteAttendance(staffId, date) {
+            if (confirm('Delete this attendance record?')) {
+                appData.attendance = appData.attendance.filter(a => !(a.staffId === staffId && a.date === date));
+                saveData();
+                updateDashboard();
+            }
+        }
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
